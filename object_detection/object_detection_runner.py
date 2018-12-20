@@ -18,12 +18,15 @@ from utils import visualization_utils as vis_util
 from utils import label_map_util
 
 from multiprocessing.dummy import Pool as ThreadPool
+import os
+import config
+
 
 MAX_NUMBER_OF_BOXES = 10
 MINIMUM_CONFIDENCE = 0.9
 
-PATH_TO_LABELS = 'annotations/label_map.pbtxt'
-PATH_TO_TEST_IMAGES_DIR = 'test_images'
+PATH_TO_LABELS = os.path.join(config.TRAINING_ANNOTATION_PATH, 'label_map.pbtxt')
+PATH_TO_TEST_IMAGES_DIR = config.TEST_IMAGE_PATH
 
 label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
 categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=sys.maxsize, use_display_name=True)
@@ -61,7 +64,7 @@ def detect_objects(image_path):
     fig.add_axes(ax)
 
     plt.imshow(image_np, aspect = 'auto')
-    plt.savefig('output/{}'.format(image_path), dpi = 62)
+    plt.savefig(os.path.join(config.TEST_IMAGE_PREDICTION_PATH, os.path.basename(image_path)), dpi = 62)
     plt.close(fig)
 
 # TEST_IMAGE_PATHS = [ os.path.join(PATH_TO_TEST_IMAGES_DIR, 'image-{}.jpg'.format(i)) for i in range(1, 4) ]

@@ -67,11 +67,8 @@ with contents:
  + saved_model (a directory)
 """
 import tensorflow as tf
-from google.protobuf import text_format
-from object_detection import exporter
-from object_detection.protos import pipeline_pb2
+from object_detection.export_inference_graph_go import go
 
-slim = tf.contrib.slim
 flags = tf.app.flags
 
 flags.DEFINE_string('input_type', 'image_tensor', 'Type of input node. Can be '
@@ -94,12 +91,7 @@ def main(_):
          '`trained_checkpoint_prefix` is missing')
   assert FLAGS.output_directory, '`output_directory` is missing'
 
-  pipeline_config = pipeline_pb2.TrainEvalPipelineConfig()
-  with tf.gfile.GFile(FLAGS.pipeline_config_path, 'r') as f:
-    text_format.Merge(f.read(), pipeline_config)
-  exporter.export_inference_graph(
-      FLAGS.input_type, pipeline_config, FLAGS.trained_checkpoint_prefix,
-      FLAGS.output_directory)
+  go(FLAGS.input_type, FLAGS.pipeline_config_path, FLAGS.output_directory, FLAGS.trained_checkpoint_prefix)
 
 
 if __name__ == '__main__':
