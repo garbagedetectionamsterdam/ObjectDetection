@@ -1,0 +1,15 @@
+FROM tensorflow/tensorflow:latest-gpu-py3
+
+WORKDIR /usr/src/api
+COPY . .
+
+ENV PYTHONPATH $PYTHONPATH:.:./slim
+ENV LC_ALL C.UTF-8
+ENV LANG C.UTF-8
+
+RUN pip install -r requirements.txt
+
+EXPOSE 5000
+
+CMD ["python", "api.py"]
+

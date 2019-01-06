@@ -1,0 +1,10 @@
+FROM tensorflow/tensorflow:latest-gpu-py3
+
+WORKDIR /usr/src/retrain
+COPY . .
+
+RUN pip install -r requirements.txt
+ENV PYTHONPATH $PYTHONPATH:.:./slim
+
+CMD ["python", "retrain.py"]
+
