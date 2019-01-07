@@ -29,7 +29,7 @@ label_map_path: "/mnt/nfs/projects/trash_recognition/data/examples/annotations/l
 
 
 
-## Running the code
+## Running the code on non-docker machine
 
 Retrain the neural net from scratch with this command:
 ```
@@ -41,3 +41,28 @@ Start the api with this command
 ./run_api_server.sh
 
 ```
+
+## Running the code on docker
+
+Retrain the neural net from scratch on a docker container with this command:
+```
+./docker_run_retrain.sh
+```
+
+Start the docker api container with this command
+```
+./docker_run_api_server.sh
+
+```
+
+## Building the docker containers
+To construct the training container or the prediction api container run:
+
+```
+./docker_build_retrain.sh
+```
+or
+```
+./docker_build_prediction_api.sh
+```
+
