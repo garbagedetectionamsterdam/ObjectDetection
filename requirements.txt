@@ -3,3 +3,5 @@ pillow
 lxml
 jupyter
 matplotlib
+flask
+

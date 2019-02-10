@@ -26,9 +26,6 @@ num_steps in train_config, which determines how many examples the network will i
 label_map_path: "/mnt/nfs/projects/trash_recognition/data/examples/annotations/label_map.pbtxt" in train_input_config, which is used to determine the labels of the neural network.
 
 
-
-
-
 ## Running the code
 
 Retrain the neural net from scratch with this command:
