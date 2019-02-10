@@ -2,6 +2,8 @@ from flask import Flask,flash, request
 from object_detection.detect_objects import PredictionServer
 import os
 from threading import Lock
+import time
+import io
 
 
 app = Flask(__name__)
@@ -19,20 +21,18 @@ lock = Lock()
 @app.route('/predict', methods=['POST'])
 def predict():
 	with lock:
+		startTime = time.time()*1000.0
+
 		print("received prediction request")
 		file_contents = request.stream.read()
 		print("read requested image")
 
-		#@TODO make this work without a file
-		with open("./temp.jpg", "bw") as f:
-			f.write(file_contents)
-		print("stored requested image")
+		timeAfterRead = time.time()*1000.0
 
-		xml_string = server.detect_objects('./temp.jpg')
+		xml_string = server.detect_objects(io.BytesIO(file_contents))
 		print("ran detection")
-
-		os.remove("./temp.jpg")
-		print("deleted temporary image")
+		timeAfterPrediction = time.time()*1000.0
+		print("prediction time " + str(timeAfterPrediction - timeAfterRead))
 
 	return xml_string
 

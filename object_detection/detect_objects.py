@@ -44,6 +44,8 @@ class PredictionServer:
     def __init__(self):
         self.detection_graph = None
         self.last_load = None
+        self.detection_graph_default = None
+        self.session = None
         self.load_graph()
 
     def load_graph(self):
@@ -58,15 +60,27 @@ class PredictionServer:
 
         self.last_load = os.path.getctime(graph_file_path)
 
+        if self.session is not None:
+            self.session.__exit__()
+
+        if self.detection_graph_default is not None:
+            self.detection_graph_default.__exit__()
+
         # Load model into memory
         print('Loading model...')
         self.detection_graph = tf.Graph()
-        with self.detection_graph.as_default():
-            od_graph_def = tf.GraphDef()
-            with tf.gfile.GFile(graph_file_path, 'rb') as fid:
-                serialized_graph = fid.read()
-                od_graph_def.ParseFromString(serialized_graph)
-                tf.import_graph_def(od_graph_def, name='')
+
+        self.detection_graph_default = self.detection_graph.as_default()
+        self.detection_graph_default.__enter__()
+
+        od_graph_def = tf.GraphDef()
+        with tf.gfile.GFile(graph_file_path, 'rb') as fid:
+            serialized_graph = fid.read()
+            od_graph_def.ParseFromString(serialized_graph)
+            tf.import_graph_def(od_graph_def, name='')
+
+        self.session = tf.Session(graph=self.detection_graph)
+        self.session.__enter__()
 
     def load_image_into_numpy_array(self, image):
         (im_width, im_height) = image.size
@@ -109,33 +123,48 @@ class PredictionServer:
 
         return result
 
-    def detect_objects(self, image_path):
+    def detect_objects(self, image_file_target):
+        startTime = time.time()*1000.0
 
+        image = Image.open(image_file_target)
+
+        loadTime = time.time()*1000.0
+        print("loadFile " + str(loadTime - startTime))
+        
+        image_np = self.load_image_into_numpy_array(image)
+
+        fileToNumpyTime = time.time()*1000.0
+        print("fileToNumpyTime " + str(fileToNumpyTime - loadTime))
+        
         self.load_graph()
         print('detecting...')
-        with self.detection_graph.as_default():
-            with tf.Session(graph=self.detection_graph) as sess:
-                image_tensor = self.detection_graph.get_tensor_by_name('image_tensor:0')
-                detection_boxes = self.detection_graph.get_tensor_by_name('detection_boxes:0')
-                detection_scores = self.detection_graph.get_tensor_by_name('detection_scores:0')
-                detection_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
-                num_detections = self.detection_graph.get_tensor_by_name('num_detections:0')
+        # with self.detection_graph.as_default():
+        #    with tf.Session(graph=self.detection_graph) as sess:
 
-                image = Image.open(image_path)
-                image_np = self.load_image_into_numpy_array(image)
-                image_np_expanded = np.expand_dims(image_np, axis=0)
+        image_tensor = self.detection_graph.get_tensor_by_name('image_tensor:0')
+        detection_boxes = self.detection_graph.get_tensor_by_name('detection_boxes:0')
+        detection_scores = self.detection_graph.get_tensor_by_name('detection_scores:0')
+        detection_classes = self.detection_graph.get_tensor_by_name('detection_classes:0')
+        num_detections = self.detection_graph.get_tensor_by_name('num_detections:0')
 
-                (boxes, scores, classes, num) = sess.run([detection_boxes, detection_scores, detection_classes, num_detections], feed_dict={image_tensor: image_np_expanded})
+        image_np_expanded = np.expand_dims(image_np, axis=0)
 
-                box_filter = scores > MINIMUM_CONFIDENCE
+        (boxes, scores, classes, num) = self.session.run([detection_boxes, detection_scores, detection_classes, num_detections], feed_dict={image_tensor: image_np_expanded})
+        
+        predictionTime = time.time()*1000.0
 
-                boxes = boxes[box_filter]
-                classes = classes[box_filter]
-                scores = scores[box_filter]
+        print("predictionTime " + str(predictionTime - fileToNumpyTime))
 
-                class_names = []
-                for i in range(classes.shape[0]):
-                    class_names.append(CATEGORY_INDEX[classes[i]])
 
-                return self.detection_xml_string(boxes, class_names, image.size[0], image.size[1])
+        box_filter = scores > MINIMUM_CONFIDENCE
+
+        boxes = boxes[box_filter]
+        classes = classes[box_filter]
+        scores = scores[box_filter]
+
+        class_names = []
+        for i in range(classes.shape[0]):
+            class_names.append(CATEGORY_INDEX[classes[i]])
+
+        return self.detection_xml_string(boxes, class_names, image.size[0], image.size[1])
 
